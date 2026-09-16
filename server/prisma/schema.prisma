@@ -1,0 +1,165 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  SUPERADMIN
+  BRANCH_MANAGER
+  CASHIER
+}
+
+enum PaymentMethod {
+  CASH
+  CARD
+  TRANSFER
+}
+
+enum SaleStatus {
+  COMPLETED
+  CANCELLED
+}
+
+enum TransferStatus {
+  COMPLETED
+  PENDING
+  CANCELLED
+}
+
+model User {
+  id        String   @id @default(uuid())
+  email     String   @unique
+  password  String
+  name      String
+  role      Role     @default(CASHIER)
+  branchId  String?
+  branch    Branch?  @relation(fields: [branchId], references: [id])
+  active    Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  sales     Sale[]
+  transfers StockTransfer[]
+}
+
+model Branch {
+  id        String   @id @default(uuid())
+  name      String
+  code      String   @unique
+  address   String
+  phone     String?
+  isMain    Boolean  @default(false)
+  active    Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  users            User[]
+  stocks           BranchStock[]
+  sales            Sale[]
+  transfersOrigin  StockTransfer[] @relation("OriginBranch")
+  transfersDest    StockTransfer[] @relation("DestinationBranch")
+}
+
+model Category {
+  id          String    @id @default(uuid())
+  name        String    @unique
+  description String?
+  active      Boolean   @default(true)
+  createdAt   DateTime  @default(now())
+  products    Product[]
+}
+
+model Product {
+  id             String        @id @default(uuid())
+  sku            String        @unique
+  barcode        String?       @unique
+  name           String
+  description    String?
+  price          Float
+  costPrice      Float         @default(0.0)
+  categoryId     String
+  category       Category      @relation(fields: [categoryId], references: [id])
+  minStockAlert  Int           @default(5)
+  active         Boolean       @default(true)
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+
+  branchStocks   BranchStock[]
+  saleItems      SaleItem[]
+  transferItems  TransferItem[]
+}
+
+model BranchStock {
+  id             String   @id @default(uuid())
+  branchId       String
+  productId      String
+  quantity       Int      @default(0)
+  minStockAlert  Int      @default(5)
+  updatedAt      DateTime @updatedAt
+
+  branch         Branch   @relation(fields: [branchId], references: [id], onDelete: Cascade)
+  product        Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@unique([branchId, productId])
+}
+
+model Sale {
+  id             String        @id @default(uuid())
+  saleNumber     String        @unique
+  branchId       String
+  branch         Branch        @relation(fields: [branchId], references: [id])
+  userId         String
+  user           User          @relation(fields: [userId], references: [id])
+  customerName   String        @default("Consumidor Final")
+  customerDoc    String?
+  customerEmail  String?
+  paymentMethod  PaymentMethod @default(CASH)
+  subtotal       Float
+  tax            Float         @default(0.0)
+  total          Float
+  status         SaleStatus    @default(COMPLETED)
+  notes          String?
+  createdAt      DateTime      @default(now())
+
+  items          SaleItem[]
+}
+
+model SaleItem {
+  id        String   @id @default(uuid())
+  saleId    String
+  sale      Sale     @relation(fields: [saleId], references: [id], onDelete: Cascade)
+  productId String
+  product   Product  @relation(fields: [productId], references: [id])
+  quantity  Int
+  unitPrice Float
+  subtotal  Float
+}
+
+model StockTransfer {
+  id             String         @id @default(uuid())
+  transferNumber String         @unique
+  fromBranchId   String
+  fromBranch     Branch         @relation("OriginBranch", fields: [fromBranchId], references: [id])
+  toBranchId     String
+  toBranch       Branch         @relation("DestinationBranch", fields: [toBranchId], references: [id])
+  userId         String
+  user           User           @relation(fields: [userId], references: [id])
+  notes          String?
+  status         TransferStatus @default(COMPLETED)
+  createdAt      DateTime       @default(now())
+
+  items          TransferItem[]
+}
+
+model TransferItem {
+  id         String        @id @default(uuid())
+  transferId String
+  transfer   StockTransfer @relation(fields: [transferId], references: [id], onDelete: Cascade)
+  productId  String
+  product    Product       @relation(fields: [productId], references: [id])
+  quantity   Int
+}
