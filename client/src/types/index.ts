@@ -1,7 +1,12 @@
 export type Role = 'SUPERADMIN' | 'BRANCH_MANAGER' | 'CASHIER';
-export type PaymentMethod = 'CASH' | 'CARD' | 'TRANSFER';
+export type PaymentMethod = 'CASH' | 'YAPE' | 'PLIN' | 'CARD' | 'TRANSFER';
 export type SaleStatus = 'COMPLETED' | 'CANCELLED';
 export type TransferStatus = 'COMPLETED' | 'PENDING' | 'CANCELLED';
+export type DocumentType = 'FACTURA' | 'BOLETA' | 'NOTA_VENTA';
+export type SunatStatus = 'ACEPTADO' | 'PENDIENTE' | 'RECHAZADO';
+export type ShiftStatus = 'OPEN' | 'CLOSED';
+export type MovementType = 'INGRESO' | 'EGRESO';
+export type KardexType = 'VENTA' | 'COMPRA' | 'TRANSFERENCIA_ENTRADA' | 'TRANSFERENCIA_SALIDA' | 'AJUSTE' | 'MERMA';
 
 export interface User {
   id: string;
@@ -83,6 +88,9 @@ export interface SaleItem {
 export interface Sale {
   id: string;
   saleNumber: string;
+  documentType: DocumentType;
+  series: string;
+  correlative: number;
   branchId: string;
   branch: {
     id: string;
@@ -99,10 +107,19 @@ export interface Sale {
   customerName: string;
   customerDoc?: string | null;
   customerEmail?: string | null;
+  customerAddress?: string | null;
+  customerPhone?: string | null;
   paymentMethod: PaymentMethod;
+  operationCode?: string | null;
+  amountPaid?: number | null;
+  changeAmount?: number | null;
+  currency: string;
   subtotal: number;
   tax: number;
   total: number;
+  hash?: string | null;
+  qrString?: string | null;
+  sunatStatus: SunatStatus;
   status: SaleStatus;
   notes?: string | null;
   createdAt: string;
@@ -141,6 +158,66 @@ export interface StockTransfer {
       name: string;
     };
   }>;
+}
+
+export interface CashMovement {
+  id: string;
+  cashRegisterId: string;
+  type: MovementType;
+  amount: number;
+  concept: string;
+  createdAt: string;
+}
+
+export interface CashRegister {
+  id: string;
+  branchId: string;
+  branch?: { id: string; name: string; code: string };
+  userId: string;
+  user?: { name: string };
+  initialAmount: number;
+  finalAmount?: number | null;
+  cashSalesAmount: number;
+  yapeSalesAmount: number;
+  plinSalesAmount: number;
+  cardSalesAmount: number;
+  transferSalesAmount: number;
+  totalSalesAllMethods?: number;
+  totalIncomes: number;
+  totalExpenses: number;
+  expectedCashInDrawer?: number;
+  expectedAmount?: number | null;
+  differenceAmount?: number | null;
+  status: ShiftStatus;
+  notes?: string | null;
+  openedAt: string;
+  closedAt?: string | null;
+  movements?: CashMovement[];
+  sales?: Array<{
+    id: string;
+    saleNumber: string;
+    total: number;
+    paymentMethod: PaymentMethod;
+    createdAt: string;
+  }>;
+  _count?: {
+    sales: number;
+    movements: number;
+  };
+}
+
+export interface KardexMovement {
+  id: string;
+  branchId: string;
+  branch: { id: string; name: string; code: string };
+  productId: string;
+  product: { id: string; name: string; sku: string; price: number };
+  type: KardexType;
+  quantity: number;
+  previousStock: number;
+  newStock: number;
+  reference?: string | null;
+  createdAt: string;
 }
 
 export interface DashboardStats {
