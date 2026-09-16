@@ -1,135 +1,101 @@
-# 📦 NexusPOS | Plataforma SaaS de Inventario & Facturación Multi-Sucursal
+# 🇵🇪 NexusPOS Perú | SaaS Multi-Sucursal de Facturación Electrónica SUNAT & Gestión de Inventarios
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](https://opensource.org/licenses/MIT)
+[![SUNAT Ready](https://img.shields.io/badge/SUNAT-Facturación%20Electrónica%20Ready-red.svg)](https://www.sunat.gob.pe)
 [![Node.js](https://img.shields.io/badge/Node.js-v20%2B-green.svg)](https://nodejs.org/)
 [![React](https://img.shields.io/badge/React-18%2B-61dafb.svg)](https://react.dev/)
 [![Prisma](https://img.shields.io/badge/Prisma-ORM-2d3748.svg)](https://www.prisma.io/)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.7-3178c6.svg)](https://www.typescriptlang.org/)
 
-Plataforma SaaS empresarial de alta disponibilidad diseñada para resolver de forma integral el control de stock en tiempo real, alertas automáticas de reposición crítica, transferencias entre sucursales, facturación rápida en Punto de Venta (POS) y emisión digital de comprobantes en formato PDF.
+**NexusPOS Perú** es una solución SaaS empresarial de alto impacto comercial, diseñada específicamente para el mercado peruano y lista para comercializarse ultra rápido frente a competidores como TumiSoft, Bsale Perú, Facturalo, Wally POS y Alegra Perú.
+
+Resuelve de forma nativa la **Facturación Electrónica SUNAT**, cobros con **Yape y Plin**, control y arqueo de **Caja Chica (Corte Z)**, trazabilidad de **Kardex**, exportación contable **SIRE SUNAT** y envío instantáneo de comprobantes por **WhatsApp**.
 
 ---
 
-## 🌟 Valor de Negocio y Portafolio
+## 🚀 ¿Por qué se vende ultra rápido a negocios en Perú?
 
-Este proyecto demuestra competencias técnicas avanzadas en:
-1. **Lógica Transaccional ACID**: Decremento atómico de inventario por sucursal durante la venta con `prisma.$transaction`, garantizando consistencia absoluta ante concurrencia.
-2. **Arquitectura Multi-Sucursal (Multi-Tenant/Multi-Branch)**: Aislamiento y consolidación de stock entre sedes (Central, Norte, Sur) con transferencias inter-sucursal auditadas.
-3. **Control de Acceso Basado en Roles (RBAC)**: Permisos diferenciados para `SUPERADMIN` (gestión global), `BRANCH_MANAGER` (operaciones de sucursal) y `CASHIER` (facturación en terminal POS).
-4. **Motor de Facturación y Emisión de PDF**: Generación vectorial de Facturas Electrónicas, Boletas de Venta y Tickets térmicos imprimibles con desglose de impuestos (IVA/IGV 18%).
-5. **UI/UX Moderna & Accesible**: Sistema de diseño con CSS moderno, modo claro/oscuro (Dark/Light mode), microinteracciones y feedback inmediato.
+| Necesidad del Negocio Peruano | Solución Integrada en NexusPOS |
+| :--- | :--- |
+| **Facturación Oficial SUNAT** | Emisión de **Facturas Electrónicas (`F001`)**, **Boletas de Venta (`B001`)** y **Notas de Venta (`NV01`)** con cálculo de IGV 18%, código Hash SHA-256 y código QR oficial. |
+| **Validación RUC / DNI** | Autocompletado inteligente de Razón Social y Nombres al ingresar los 8 dígitos (DNI) u 11 dígitos (RUC) sin salir de la pantalla de cobro. |
+| **Billeteras Digitales (Yape / Plin)** | Cobro con código QR en pantalla y registro del N° de operación para cuadres bancarios. |
+| **Efectivo y Vuelto Rápido** | Calculadora con botones rápidos de billetes peruanos (S/ 10, S/ 20, S/ 50, S/ 100, S/ 200) y cálculo automático del vuelto en soles. |
+| **Envío por WhatsApp** | Botón directo que abre WhatsApp con mensaje comercial predeterminado y enlace de descarga del comprobante en PDF para el cliente. |
+| **Control de Caja Chica & Arqueo** | Apertura con saldo inicial, registro de gastos menores del día (delivery, compras) y **Arqueo de Cierre de Turno (Corte Z)** con detección automática de sobrantes o faltantes. |
+| **Kardex y Contabilidad SIRE** | Trazabilidad de entradas/salidas y exportación en formato oficial **SIRE SUNAT (Registro de Ventas e Ingresos Electrónico)** para el contador. |
+| **Operación Multi-Sucursal** | Control independiente de inventario por sede con transferencias auditadas en tiempo real. |
 
 ---
 
-## 🏗️ Arquitectura del Sistema
+## 🛠️ Stack Tecnológico
 
-```text
-inventory-billing-saas/
-├── server/                     # Backend API REST
-│   ├── prisma/
-│   │   ├── schema.prisma       # Esquema relacional (Branch, User, Product, Stock, Sale, Transfer)
-│   │   └── seed.ts             # Carga inicial con 3 sucursales, usuarios, catálogo y ventas
-│   └── src/
-│       ├── controllers/        # Controladores de negocio (Auth, Branch, Product, Sale, Transfer, Dashboard)
-│       ├── middlewares/        # Autenticación JWT y validación RBAC
-│       ├── routes/             # Endpoints versionados (/api/*)
-│       ├── utils/              # Generador vectorial de facturas con PDFKit
-│       ├── prisma.ts           # Cliente singleton de base de datos
-│       └── index.ts            # Entrypoint del servidor Express
-│
-├── client/                     # Frontend SPA (React + Vite + TypeScript)
-│   └── src/
-│       ├── components/         # Header, Sidebar, LoginModal, etc.
-│       ├── context/            # AuthContext (Sesión, Sucursal Activa, Tema Dark/Light)
-│       ├── pages/
-│       │   ├── DashboardPage.tsx     # Analítica ejecutiva, KPIs y gráficos
-│       │   ├── POSPage.tsx           # Terminal de cobranza rápida y carrito
-│       │   ├── InventoryPage.tsx     # Matriz de stock multi-sucursal y ajustes
-│       │   ├── TransfersPage.tsx     # Logística de transferencias entre sedes
-│       │   ├── SalesHistoryPage.tsx  # Historial auditado y descarga de PDF
-│       │   └── BranchesPage.tsx      # Gestión de sucursales activas
-│       ├── services/api.ts     # Cliente HTTP tipado con inyección de JWT
-│       ├── utils/pdfReceipt.ts # Generador cliente de tickets POS con jsPDF
-│       └── index.css           # Sistema de diseño con CSS Tokens
-└── package.json                # Orquestador de scripts
-```
+- **Backend**: Node.js, Express, TypeScript, Prisma ORM, JWT, PDFKit, SHA-256 Hash.
+- **Frontend**: React 18, Vite, TypeScript, Lucide Icons, Canvas-Confetti, jsPDF (Tickets 80mm térmicos).
+- **Base de Datos**: SQLite (Zero-Config inmediata para demostraciones, 100% compatible con PostgreSQL mediante cadena de conexión).
+- **Estilos**: Sistema de diseño moderno en CSS Vanilla con variables de diseño, modo claro/oscuro (Dark/Light Mode) y estética Glassmorphism.
 
 ---
 
 ## 👥 Credenciales de Demostración (Roles RBAC)
 
-La base de datos viene precargada con cuentas para evaluar cada rol:
+La plataforma incluye botones de **Acceso Rápido** en la pantalla de inicio de sesión:
 
-| Rol | Correo Electrónico | Contraseña | Sucursal Asignada | Permisos |
+| Rol | Correo Electrónico | Contraseña | Sucursal Asignada | Capacidades |
 | :--- | :--- | :--- | :--- | :--- |
-| **SuperAdmin** | `admin@saas.com` | `admin123` | Global / Central | Acceso total, cambio de sucursal dinámico, creación de sedes y productos. |
-| **Gerente Sucursal** | `manager.norte@saas.com` | `manager123` | Sucursal Norte | Gestión de inventario local, ajustes de stock, transferencias y reportes. |
-| **Cajero POS** | `cajero.central@saas.com` | `cajero123` | Sucursal Central | Terminal de Punto de Venta, registro de ventas y emisión de facturas/boletas. |
-
-*Nota: La pantalla de login cuenta con botones de acceso rápido para alternar entre roles con un solo clic.*
+| **SuperAdmin** | `admin@saas.com` | `admin123` | Global / Todas | Control total, cambio dinámico de sucursal, apertura de sedes, creación de productos y analítica consolidada. |
+| **Gerente de Sucursal** | `manager.norte@saas.com` | `manager123` | Sucursal Norte | Gestión de inventario local, ajustes de stock, transferencias inter-sucursal y reportes. |
+| **Cajero POS** | `cajero.central@saas.com` | `cajero123` | Sucursal Central | Punto de Venta (POS), control de caja chica, arqueo de turno y emisión de boletas/facturas. |
 
 ---
 
-## ⚙️ Instalación y Puesta en Marcha
-
-### Prerrequisitos
-- **Node.js**: v18 o superior (`node -v`)
-- **npm**: v9 o superior (`npm -v`)
+## ⚡ Instalación y Puesta en Marcha en 2 Minutos
 
 ### 1. Clonar el Repositorio
 ```bash
-git clone https://github.com/tu-usuario/inventory-billing-saas.git
+git clone https://github.com/mfdevelopersupport-spec/inventory-billing-saas.git
 cd inventory-billing-saas
 ```
 
-### 2. Configurar y Levantar el Servidor Backend
+### 2. Iniciar Backend (Puerto 5000)
 ```bash
 cd server
 npm install
-
-# Generar cliente y migrar base de datos (SQLite Zero-Config precargado)
 npx prisma db push
 npx tsx prisma/seed.ts
-
-# Iniciar servidor backend en modo desarrollo (Puerto 5000)
 npm run dev
 ```
 
-### 3. Configurar y Levantar el Cliente Frontend
-En una nueva terminal:
+### 3. Iniciar Frontend (Puerto 5173)
+En otra terminal:
 ```bash
 cd client
 npm install
-
-# Iniciar servidor frontend con Vite (Puerto 5173)
 npm run dev
 ```
 
-Abra su navegador en **`http://localhost:5173`**.
+Acceda a **`http://localhost:5173`** en su navegador web.
 
 ---
 
-## 🧪 Pruebas de Flujos Clave
+## 💡 Guía de Demostración Comercial para Clientes
 
-1. **Venta en Punto de Venta (POS)**:
-   - Inicie sesión como Cajero o SuperAdmin.
-   - Navegue a **Punto de Venta (POS)**.
-   - Agregue productos al carrito (observe cómo el stock disponible restringe la cantidad máxima).
-   - Ingrese los datos del cliente y método de pago (Efectivo, Tarjeta o Transferencia).
-   - Haga clic en **Cobrar & Emitir Factura** (se detonará la animación de confeti y se generará el comprobante).
-   - Descargue el comprobante en **PDF** con membrete oficial o imprima el ticket térmico.
-
-2. **Alertas de Stock en Tiempo Real**:
-   - En la cabecera superior, observe el ícono de la campana con el badge numérico.
-   - Los productos con stock igual o inferior al umbral mínimo se resaltan automáticamente en color amarillo (`Stock Bajo`) o rojo (`Agotado`).
-
-3. **Transferencia entre Sucursales**:
-   - Inicie sesión como SuperAdmin o Gerente.
-   - Vaya a **Transferencias** > **Nueva Transferencia**.
-   - Seleccione la sucursal emisora y receptora, indique la cantidad y confirme.
-   - Verifique en la **Matriz de Inventario** cómo el balance se actualizó inmediatamente en ambas sedes.
+1. **Aperturar Caja Chica**:
+   - Vaya a **Caja Chica & Turnos** y haga clic en **Aperturar Turno de Caja** con S/ 100.00.
+2. **Facturar en el Punto de Venta**:
+   - Vaya a **Punto de Venta (POS)**.
+   - Seleccione **Factura (F001)** e ingrese el RUC `20601234567` (haga clic en *Consultar* para ver el autocompletado de la Razón Social y Dirección Fiscal).
+   - Agregue productos al carrito y elija **Yape** ingresando el código de operación o **Efectivo** pagando con S/ 200 para ver el cálculo del vuelto.
+   - Presione **Emitir Factura** (se detonará la animación de éxito con comprobante SUNAT).
+   - Pruebe el botón **Enviar Comprobante por WhatsApp** o descargue la **Factura PDF** / **Ticket Térmico de 80mm**.
+3. **Registrar un Gasto de Caja Chica**:
+   - Vaya a **Caja Chica & Turnos** > **Gasto / Ingreso Menor**, registre un egreso de S/ 15.00 por "Pago de delivery de bolsas".
+4. **Cierre de Caja y Arqueo (Corte Z)**:
+   - Haga clic en **Arqueo & Cerrar Caja**, ingrese el dinero contado y observe la conciliación automática entre el sistema y la gaveta física.
+5. **Kardex y Reporte SIRE SUNAT**:
+   - Vaya a **Kardex & SIRE SUNAT** para auditar el movimiento de salida y descargue el archivo compatible con el Registro de Ventas de SUNAT en un solo clic.
 
 ---
 
 ## 📄 Licencia
-Este proyecto se distribuye bajo la licencia MIT. Consulta el archivo `LICENSE` para más detalles.
+Distribuido bajo la Licencia MIT. Consulte el archivo `LICENSE` para más información.
