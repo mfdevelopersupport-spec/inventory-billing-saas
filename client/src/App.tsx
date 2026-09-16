@@ -9,6 +9,8 @@ import { InventoryPage } from './pages/InventoryPage';
 import { TransfersPage } from './pages/TransfersPage';
 import { SalesHistoryPage } from './pages/SalesHistoryPage';
 import { BranchesPage } from './pages/BranchesPage';
+import { CashRegisterPage } from './pages/CashRegisterPage';
+import { KardexPage } from './pages/KardexPage';
 
 function AppContent() {
   const { user, isLoading } = useAuth();
@@ -28,7 +30,7 @@ function AppContent() {
       >
         <div className="pulse-indicator" style={{ width: '24px', height: '24px' }} />
         <div style={{ marginTop: '16px', fontWeight: 600, color: 'var(--text-muted)' }}>
-          Cargando NexusPOS Cloud...
+          Cargando NexusPOS Perú...
         </div>
       </div>
     );
@@ -44,8 +46,12 @@ function AppContent() {
         return <DashboardPage onNavigateToTab={setActiveTab} />;
       case 'pos':
         return <POSPage />;
+      case 'caja':
+        return <CashRegisterPage />;
       case 'inventory':
         return <InventoryPage />;
+      case 'kardex':
+        return <KardexPage />;
       case 'transfers':
         return <TransfersPage />;
       case 'sales':

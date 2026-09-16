@@ -7,6 +7,8 @@ import {
   ReceiptText,
   Building2,
   PackageCheck,
+  Wallet,
+  FileSpreadsheet,
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 
@@ -29,13 +31,25 @@ export const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab }) => 
       id: 'pos',
       label: 'Punto de Venta (POS)',
       icon: ShoppingCart,
-      badge: 'Facturación',
+      badge: 'SUNAT S/',
+      roles: ['SUPERADMIN', 'BRANCH_MANAGER', 'CASHIER'],
+    },
+    {
+      id: 'caja',
+      label: 'Caja Chica & Turnos',
+      icon: Wallet,
       roles: ['SUPERADMIN', 'BRANCH_MANAGER', 'CASHIER'],
     },
     {
       id: 'inventory',
       label: 'Inventario de Stock',
       icon: Boxes,
+      roles: ['SUPERADMIN', 'BRANCH_MANAGER'],
+    },
+    {
+      id: 'kardex',
+      label: 'Kardex & SIRE SUNAT',
+      icon: FileSpreadsheet,
       roles: ['SUPERADMIN', 'BRANCH_MANAGER'],
     },
     {
@@ -76,7 +90,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab }) => 
       {/* Brand / Logo */}
       <div
         style={{
-          padding: '24px 20px',
+          padding: '22px 20px',
           display: 'flex',
           alignItems: 'center',
           gap: '12px',
@@ -111,9 +125,12 @@ export const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab }) => 
             }}
           >
             Nexus<span style={{ color: 'var(--primary)' }}>POS</span>
+            <span style={{ fontSize: '0.65rem', background: '#dc2626', color: '#fff', padding: '1px 5px', borderRadius: '4px' }}>
+              PERÚ
+            </span>
           </div>
           <div style={{ fontSize: '0.68rem', color: '#94a3b8', fontWeight: 600 }}>
-            INVENTARIO & FACTURACIÓN
+            FACTURACIÓN SUNAT READY
           </div>
         </div>
       </div>
@@ -121,7 +138,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab }) => 
       {/* Navigation items */}
       <div
         style={{
-          padding: '20px 12px',
+          padding: '18px 12px',
           flex: 1,
           display: 'flex',
           flexDirection: 'column',
@@ -136,10 +153,10 @@ export const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab }) => 
             letterSpacing: '0.08em',
             color: '#64748b',
             fontWeight: 700,
-            padding: '8px 12px 4px 12px',
+            padding: '6px 12px 4px 12px',
           }}
         >
-          Módulos del Sistema
+          Módulos Comerciales
         </div>
 
         {menuItems
@@ -160,7 +177,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab }) => 
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'space-between',
-                  padding: '11px 14px',
+                  padding: '10px 14px',
                   borderRadius: 'var(--radius-sm)',
                   border: 'none',
                   background: isActive
@@ -170,7 +187,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab }) => 
                   borderLeft: isActive ? '3px solid var(--primary)' : '3px solid transparent',
                   cursor: 'pointer',
                   fontWeight: isActive ? 700 : 500,
-                  fontSize: '0.88rem',
+                  fontSize: '0.86rem',
                   fontFamily: 'var(--font-sans)',
                   transition: 'all 0.15s ease',
                   textAlign: 'left',
@@ -188,20 +205,21 @@ export const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab }) => 
                   }
                 }}
               >
-                <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                  <Icon size={19} color={isActive ? 'var(--primary)' : 'currentColor'} />
+                <div style={{ display: 'flex', alignItems: 'center', gap: '11px' }}>
+                  <Icon size={18} color={isActive ? 'var(--primary)' : 'currentColor'} />
                   <span>{item.label}</span>
                 </div>
 
                 {item.badge && (
                   <span
                     style={{
-                      fontSize: '0.68rem',
-                      background: 'var(--primary-glow)',
-                      color: '#60a5fa',
-                      padding: '2px 7px',
+                      fontSize: '0.65rem',
+                      background: 'rgba(220, 38, 38, 0.15)',
+                      color: '#f87171',
+                      border: '1px solid rgba(220, 38, 38, 0.3)',
+                      padding: '2px 6px',
                       borderRadius: 'var(--radius-full)',
-                      fontWeight: 700,
+                      fontWeight: 800,
                     }}
                   >
                     {item.badge}
@@ -212,27 +230,28 @@ export const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab }) => 
           })}
       </div>
 
-      {/* Footer Info Box */}
+      {/* Footer Info */}
       <div
         style={{
-          padding: '16px',
+          padding: '14px 16px',
           borderTop: '1px solid var(--border-color)',
           background: 'rgba(0, 0, 0, 0.15)',
         }}
       >
         <div
           style={{
-            padding: '12px',
+            padding: '10px 12px',
             background: 'rgba(255, 255, 255, 0.03)',
             borderRadius: 'var(--radius-sm)',
             border: '1px solid var(--border-subtle)',
           }}
         >
-          <div style={{ fontSize: '0.75rem', fontWeight: 700, color: '#f8fafc' }}>
-            Multi-Sucursal v1.0
+          <div style={{ fontSize: '0.74rem', fontWeight: 700, color: '#f8fafc', display: 'flex', alignItems: 'center', gap: '5px' }}>
+            <span style={{ width: '7px', height: '7px', borderRadius: '50%', background: '#10b981' }} />
+            Padrón SUNAT Conectado
           </div>
-          <div style={{ fontSize: '0.7rem', color: '#64748b', marginTop: '2px' }}>
-            Transacciones ACID sincronizadas
+          <div style={{ fontSize: '0.68rem', color: '#94a3b8', marginTop: '2px' }}>
+            Series F001 / B001 / NV01
           </div>
         </div>
       </div>
