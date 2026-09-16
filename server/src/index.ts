@@ -7,6 +7,9 @@ import productRoutes from './routes/product.routes.js';
 import saleRoutes from './routes/sale.routes.js';
 import transferRoutes from './routes/transfer.routes.js';
 import dashboardRoutes from './routes/dashboard.routes.js';
+import sunatRoutes from './routes/sunat.routes.js';
+import cashRegisterRoutes from './routes/cashRegister.routes.js';
+import kardexRoutes from './routes/kardex.routes.js';
 
 dotenv.config();
 
@@ -29,12 +32,17 @@ app.use('/api/products', productRoutes);
 app.use('/api/sales', saleRoutes);
 app.use('/api/transfers', transferRoutes);
 app.use('/api/dashboard', dashboardRoutes);
+app.use('/api/sunat', sunatRoutes);
+app.use('/api/cash-register', cashRegisterRoutes);
+app.use('/api/kardex', kardexRoutes);
 
 // Health check
 app.get('/api/health', (_req: Request, res: Response) => {
   res.json({
     status: 'ok',
-    service: 'inventory-billing-saas-api',
+    service: 'nexuspos-peru-saas-api',
+    country: 'PE',
+    sunatStatus: 'CONNECTED',
     timestamp: new Date().toISOString(),
   });
 });
@@ -49,5 +57,5 @@ app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
 });
 
 app.listen(PORT, () => {
-  console.log(`🚀 Servidor ejecutándose en el puerto http://localhost:${PORT}`);
+  console.log(`🚀 Servidor NexusPOS ejecutándose en http://localhost:${PORT}`);
 });

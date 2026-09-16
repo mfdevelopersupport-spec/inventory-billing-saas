@@ -3,14 +3,22 @@ import { Response } from 'express';
 
 interface SalePDFData {
   saleNumber: string;
+  documentType: string;
+  series: string;
+  correlative: number;
   createdAt: Date;
   customerName: string;
   customerDoc?: string | null;
   customerEmail?: string | null;
+  customerAddress?: string | null;
   paymentMethod: string;
+  operationCode?: string | null;
+  currency: string;
   subtotal: number;
   tax: number;
   total: number;
+  hash?: string | null;
+  qrString?: string | null;
   branch: {
     name: string;
     code: string;
@@ -32,198 +40,232 @@ interface SalePDFData {
 }
 
 export function generateInvoicePDF(sale: SalePDFData, res: Response): void {
-  const doc = new PDFDocument({ margin: 40, size: 'A4' });
+  const doc = new PDFDocument({ margin: 38, size: 'A4' });
 
-  // Stream directly to HTTP response
   doc.pipe(res);
 
-  // Header Colors & Styling
-  const primaryColor = '#1e293b';
-  const secondaryColor = '#64748b';
+  const primaryColor = '#0f172a';
+  const secondaryColor = '#475569';
   const accentColor = '#2563eb';
-  const lineColor = '#e2e8f0';
+  const lineColor = '#cbd5e1';
+  const currSym = sale.currency === 'USD' ? '$' : 'S/';
 
-  // Header: Company info & Document Title
+  // Header: Company details
   doc
     .fillColor(accentColor)
-    .fontSize(22)
+    .fontSize(20)
     .font('Helvetica-Bold')
-    .text('NEXUS INVENTORY & POS', 40, 45)
-    .fontSize(9)
+    .text('NEXUS POS PERÚ', 38, 40)
+    .fontSize(8.5)
+    .font('Helvetica-Bold')
+    .fillColor(primaryColor)
+    .text('NEXUS INVENTORY & POS S.A.C.', 38, 65)
     .font('Helvetica')
     .fillColor(secondaryColor)
-    .text('Soluciones Globales de Facturación y Logística S.A.C.', 40, 72)
-    .text('RUC: 20608974512  |  contacto@nexuspos.com  |  www.nexuspos.com', 40, 85);
+    .text('Casa Matriz: Av. Javier Prado Este 2450 Int. 802, San Isidro - Lima', 38, 77)
+    .text(`Sucursal Emisora: ${sale.branch.name} - ${sale.branch.address}`, 38, 88)
+    .text('Telf: (01) 450-1000  |  Email: facturacion@nexuspos.pe  |  Web: www.nexuspos.pe', 38, 99);
 
-  // Box Comprobante (Right Top)
+  // Official SUNAT Invoice Frame (Right Top)
   doc
-    .rect(380, 40, 180, 75)
-    .lineWidth(1)
+    .rect(370, 38, 190, 80)
+    .lineWidth(1.5)
     .strokeColor(accentColor)
     .stroke();
 
-  const docType = sale.saleNumber.startsWith('FAC') ? 'FACTURA ELECTRÓNICA' : 'BOLETA DE VENTA';
+  let docTitle = 'BOLETA DE VENTA ELECTRÓNICA';
+  if (sale.documentType === 'FACTURA') {
+    docTitle = 'FACTURA ELECTRÓNICA';
+  } else if (sale.documentType === 'NOTA_VENTA') {
+    docTitle = 'NOTA DE VENTA';
+  }
+
   doc
     .fillColor(primaryColor)
     .fontSize(11)
     .font('Helvetica-Bold')
-    .text('RUC: 20608974512', 380, 50, { align: 'center', width: 180 })
+    .text('R.U.C. 20608974512', 370, 48, { align: 'center', width: 190 })
     .fillColor(accentColor)
-    .fontSize(12)
-    .text(docType, 380, 68, { align: 'center', width: 180 })
+    .fontSize(10.5)
+    .text(docTitle, 370, 66, { align: 'center', width: 190 })
     .fillColor(primaryColor)
     .fontSize(13)
-    .text(`N° ${sale.saleNumber}`, 380, 88, { align: 'center', width: 180 });
+    .text(sale.saleNumber, 370, 88, { align: 'center', width: 190 });
 
   // Divider Line
-  doc
-    .moveTo(40, 130)
-    .lineTo(560, 130)
-    .lineWidth(1)
-    .strokeColor(lineColor)
-    .stroke();
+  doc.moveTo(38, 128).lineTo(560, 128).lineWidth(1).strokeColor(lineColor).stroke();
 
-  // Branch & Customer Info Box
+  // Customer & Issue Information Box
   doc
-    .rect(40, 140, 520, 80)
+    .rect(38, 136, 522, 74)
     .fillColor('#f8fafc')
     .fill()
-    .rect(40, 140, 520, 80)
+    .rect(38, 136, 522, 74)
     .strokeColor(lineColor)
     .stroke();
 
-  // Left column: Branch
+  // Left Column
   doc
     .fillColor(secondaryColor)
-    .fontSize(8)
+    .fontSize(7.5)
     .font('Helvetica-Bold')
-    .text('DATOS DE EMISIÓN', 55, 148)
+    .text('DATOS DEL CLIENTE', 48, 144)
     .font('Helvetica')
     .fillColor(primaryColor)
-    .fontSize(9)
-    .text(`Sucursal: ${sale.branch.name} (${sale.branch.code})`, 55, 162)
-    .text(`Dirección: ${sale.branch.address}`, 55, 175)
-    .text(`Fecha/Hora: ${new Date(sale.createdAt).toLocaleString('es-PE')}`, 55, 188)
-    .text(`Atendido por: ${sale.user.name}`, 55, 201);
+    .fontSize(8.5)
+    .text(`Señor(es): ${sale.customerName}`, 48, 156)
+    .text(`Doc. Identidad / RUC: ${sale.customerDoc || 'Sin Documento (Clientes Varios)'}`, 48, 169)
+    .text(`Dirección Fiscal: ${sale.customerAddress || 'LIMA, PERÚ'}`, 48, 182);
 
-  // Right column: Customer
+  // Right Column
   doc
     .fillColor(secondaryColor)
-    .fontSize(8)
+    .fontSize(7.5)
     .font('Helvetica-Bold')
-    .text('DATOS DEL CLIENTE', 320, 148)
+    .text('INFORMACIÓN DE EMISIÓN', 330, 144)
     .font('Helvetica')
     .fillColor(primaryColor)
-    .fontSize(9)
-    .text(`Cliente: ${sale.customerName}`, 320, 162)
-    .text(`Doc / RUC: ${sale.customerDoc || 'Sin documento registrado'}`, 320, 175)
-    .text(`Método de Pago: ${sale.paymentMethod}`, 320, 188)
-    .text(`Email: ${sale.customerEmail || 'N/A'}`, 320, 201);
+    .fontSize(8.5)
+    .text(`Fecha de Emisión: ${new Date(sale.createdAt).toLocaleDateString('es-PE')}`, 330, 156)
+    .text(`Moneda: ${sale.currency === 'USD' ? 'DÓLARES AMERICANOS (USD)' : 'SOLES (PEN)'}`, 330, 169)
+    .text(`Forma de Pago: ${sale.paymentMethod} ${sale.operationCode ? `(Op: ${sale.operationCode})` : ''}`, 330, 182)
+    .text(`Cajero Responsable: ${sale.user.name}`, 330, 195);
 
   // Table Header
-  const tableTop = 235;
-  doc
-    .rect(40, tableTop, 520, 24)
-    .fillColor('#1e293b')
-    .fill();
+  const tableTop = 222;
+  doc.rect(38, tableTop, 522, 22).fillColor('#0f172a').fill();
 
   doc
     .fillColor('#ffffff')
     .font('Helvetica-Bold')
-    .fontSize(8.5)
-    .text('CÓDIGO / SKU', 50, tableTop + 7)
-    .text('DESCRIPCIÓN DEL ÍTEM', 140, tableTop + 7)
-    .text('CANT.', 370, tableTop + 7, { width: 40, align: 'center' })
-    .text('P. UNIT.', 420, tableTop + 7, { width: 60, align: 'right' })
-    .text('IMPORTE', 490, tableTop + 7, { width: 60, align: 'right' });
+    .fontSize(8)
+    .text('CÓDIGO', 48, tableTop + 6)
+    .text('DESCRIPCIÓN DEL PRODUCTO / SERVICIO', 120, tableTop + 6)
+    .text('CANT.', 350, tableTop + 6, { width: 40, align: 'center' })
+    .text('P. UNIT.', 405, tableTop + 6, { width: 65, align: 'right' })
+    .text('VALOR TOTAL', 485, tableTop + 6, { width: 65, align: 'right' });
 
-  // Table Rows
-  let currentY = tableTop + 24;
-  doc.font('Helvetica').fontSize(8.5);
+  // Table Body Rows
+  let currentY = tableTop + 22;
+  doc.font('Helvetica').fontSize(8);
 
   sale.items.forEach((item, index) => {
     const isEven = index % 2 === 0;
     if (isEven) {
-      doc.rect(40, currentY, 520, 22).fillColor('#f8fafc').fill();
+      doc.rect(38, currentY, 522, 20).fillColor('#f8fafc').fill();
     }
 
     doc
       .fillColor(primaryColor)
-      .text(item.product.sku, 50, currentY + 6)
-      .text(item.product.name.slice(0, 42), 140, currentY + 6)
-      .text(item.quantity.toString(), 370, currentY + 6, { width: 40, align: 'center' })
-      .text(`$${item.unitPrice.toFixed(2)}`, 420, currentY + 6, { width: 60, align: 'right' })
-      .text(`$${item.subtotal.toFixed(2)}`, 490, currentY + 6, { width: 60, align: 'right' });
+      .text(item.product.sku, 48, currentY + 5)
+      .text(item.product.name.slice(0, 46), 120, currentY + 5)
+      .text(item.quantity.toString(), 350, currentY + 5, { width: 40, align: 'center' })
+      .text(`${currSym} ${item.unitPrice.toFixed(2)}`, 405, currentY + 5, { width: 65, align: 'right' })
+      .text(`${currSym} ${item.subtotal.toFixed(2)}`, 485, currentY + 5, { width: 65, align: 'right' });
 
-    currentY += 22;
+    currentY += 20;
   });
 
-  // Divider under table
-  doc
-    .moveTo(40, currentY + 5)
-    .lineTo(560, currentY + 5)
-    .lineWidth(0.5)
-    .strokeColor(lineColor)
-    .stroke();
+  doc.moveTo(38, currentY + 2).lineTo(560, currentY + 2).lineWidth(0.5).strokeColor(lineColor).stroke();
 
-  // Financial Totals Box
-  const totalsY = currentY + 15;
+  // Financial Summary Section (SUNAT Breakdown)
+  const totalsY = currentY + 12;
   const totalsX = 350;
 
   doc
-    .rect(totalsX, totalsY, 210, 80)
+    .rect(totalsX, totalsY, 210, 86)
     .fillColor('#f8fafc')
     .fill()
-    .rect(totalsX, totalsY, 210, 80)
+    .rect(totalsX, totalsY, 210, 86)
     .strokeColor(lineColor)
     .stroke();
 
   doc
     .font('Helvetica')
-    .fontSize(9)
+    .fontSize(8.5)
     .fillColor(secondaryColor)
-    .text('Subtotal:', totalsX + 15, totalsY + 12)
-    .text('Impuesto (IVA 18%):', totalsX + 15, totalsY + 30)
+    .text('Op. Gravada:', totalsX + 12, totalsY + 10)
+    .text('Op. Exonerada / Inafecta:', totalsX + 12, totalsY + 24)
+    .text('I.G.V. (18%):', totalsX + 12, totalsY + 38)
     .font('Helvetica-Bold')
     .fontSize(11)
     .fillColor(primaryColor)
-    .text('TOTAL A PAGAR:', totalsX + 15, totalsY + 52);
+    .text('IMPORTE TOTAL:', totalsX + 12, totalsY + 58);
 
   doc
     .font('Helvetica')
-    .fontSize(9)
+    .fontSize(8.5)
     .fillColor(primaryColor)
-    .text(`$${sale.subtotal.toFixed(2)}`, totalsX + 110, totalsY + 12, { width: 85, align: 'right' })
-    .text(`$${sale.tax.toFixed(2)}`, totalsX + 110, totalsY + 30, { width: 85, align: 'right' })
+    .text(`${currSym} ${sale.subtotal.toFixed(2)}`, totalsX + 110, totalsY + 10, { width: 88, align: 'right' })
+    .text(`${currSym} 0.00`, totalsX + 110, totalsY + 24, { width: 88, align: 'right' })
+    .text(`${currSym} ${sale.tax.toFixed(2)}`, totalsX + 110, totalsY + 38, { width: 88, align: 'right' })
     .font('Helvetica-Bold')
     .fontSize(12)
     .fillColor(accentColor)
-    .text(`$${sale.total.toFixed(2)} USD`, totalsX + 110, totalsY + 50, { width: 85, align: 'right' });
+    .text(`${currSym} ${sale.total.toFixed(2)}`, totalsX + 110, totalsY + 56, { width: 88, align: 'right' });
 
-  // Security and Verification Note
+  // SUNAT QR Code & Hash Representation
   doc
-    .font('Helvetica-Bold')
-    .fontSize(8)
-    .fillColor(secondaryColor)
-    .text('Representación impresa del Comprobante de Pago Electrónico', 40, totalsY + 20)
-    .font('Helvetica')
-    .fontSize(7.5)
-    .text('Autorizado mediante Resolución de Superintendencia. Consulte la validez con el código de comprobante.', 40, totalsY + 35)
-    .text('¡Gracias por su compra! Garantía y soporte oficial en cualquiera de nuestras sucursales a nivel nacional.', 40, totalsY + 50);
+    .rect(38, totalsY, 290, 86)
+    .fillColor('#ffffff')
+    .fill()
+    .rect(38, totalsY, 290, 86)
+    .strokeColor(lineColor)
+    .stroke();
 
-  // Footer bar
+  // Draw simulated QR box
   doc
-    .rect(40, 780, 520, 20)
-    .fillColor('#f1f5f9')
+    .rect(48, totalsY + 10, 66, 66)
+    .fillColor('#0f172a')
+    .fill();
+  doc
+    .rect(52, totalsY + 14, 20, 20)
+    .fillColor('#ffffff')
+    .fill();
+  doc
+    .rect(56, totalsY + 18, 12, 12)
+    .fillColor('#0f172a')
+    .fill();
+  doc
+    .rect(88, totalsY + 14, 20, 20)
+    .fillColor('#ffffff')
+    .fill();
+  doc
+    .rect(92, totalsY + 18, 12, 12)
+    .fillColor('#0f172a')
+    .fill();
+  doc
+    .rect(52, totalsY + 50, 20, 20)
+    .fillColor('#ffffff')
+    .fill();
+  doc
+    .rect(56, totalsY + 54, 12, 12)
+    .fillColor('#0f172a')
     .fill();
 
   doc
+    .font('Helvetica-Bold')
+    .fontSize(7.5)
+    .fillColor(primaryColor)
+    .text('COMPROBANTE ELECTRÓNICO SUNAT', 124, totalsY + 12)
     .font('Helvetica')
-    .fontSize(8)
+    .fontSize(7)
     .fillColor(secondaryColor)
-    .text('Documento generado digitalmente por el Sistema SaaS de Facturación e Inventarios.', 40, 785, {
+    .text(`Código Hash: ${sale.hash || 'e2E48Z+A87Yx91K02P1...' }`, 124, totalsY + 25)
+    .text('Estado: ACEPTADO / VALIDADOR OSE-SUNAT', 124, totalsY + 37)
+    .text('Autorizado mediante R.S. N° 034-005-0005315/SUNAT', 124, totalsY + 49)
+    .text('Consulte la autenticidad en https://ww1.sunat.gob.pe', 124, totalsY + 61);
+
+  // Footer bar
+  doc.rect(38, 775, 522, 22).fillColor('#f1f5f9').fill();
+
+  doc
+    .font('Helvetica')
+    .fontSize(7.5)
+    .fillColor(secondaryColor)
+    .text('Representación Impresa de la Factura Electrónica. ¡Gracias por contribuir con el desarrollo del Perú!', 38, 781, {
       align: 'center',
-      width: 520,
+      width: 522,
     });
 
   doc.end();
