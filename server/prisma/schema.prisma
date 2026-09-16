@@ -15,6 +15,8 @@ enum Role {
 
 enum PaymentMethod {
   CASH
+  YAPE
+  PLIN
   CARD
   TRANSFER
 }
@@ -30,6 +32,37 @@ enum TransferStatus {
   CANCELLED
 }
 
+enum DocumentType {
+  FACTURA
+  BOLETA
+  NOTA_VENTA
+}
+
+enum SunatStatus {
+  ACEPTADO
+  PENDIENTE
+  RECHAZADO
+}
+
+enum ShiftStatus {
+  OPEN
+  CLOSED
+}
+
+enum MovementType {
+  INGRESO
+  EGRESO
+}
+
+enum KardexType {
+  VENTA
+  COMPRA
+  TRANSFERENCIA_ENTRADA
+  TRANSFERENCIA_SALIDA
+  AJUSTE
+  MERMA
+}
+
 model User {
   id        String   @id @default(uuid())
   email     String   @unique
@@ -42,8 +75,9 @@ model User {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  sales     Sale[]
-  transfers StockTransfer[]
+  sales          Sale[]
+  transfers      StockTransfer[]
+  cashRegisters  CashRegister[]
 }
 
 model Branch {
@@ -60,8 +94,10 @@ model Branch {
   users            User[]
   stocks           BranchStock[]
   sales            Sale[]
-  transfersOrigin  StockTransfer[] @relation("OriginBranch")
-  transfersDest    StockTransfer[] @relation("DestinationBranch")
+  transfersOrigin  StockTransfer[]  @relation("OriginBranch")
+  transfersDest    StockTransfer[]  @relation("DestinationBranch")
+  cashRegisters    CashRegister[]
+  kardexMovements  KardexMovement[]
 }
 
 model Category {
@@ -88,9 +124,10 @@ model Product {
   createdAt      DateTime      @default(now())
   updatedAt      DateTime      @updatedAt
 
-  branchStocks   BranchStock[]
-  saleItems      SaleItem[]
-  transferItems  TransferItem[]
+  branchStocks    BranchStock[]
+  saleItems       SaleItem[]
+  transferItems   TransferItem[]
+  kardexMovements KardexMovement[]
 }
 
 model BranchStock {
@@ -108,24 +145,39 @@ model BranchStock {
 }
 
 model Sale {
-  id             String        @id @default(uuid())
-  saleNumber     String        @unique
-  branchId       String
-  branch         Branch        @relation(fields: [branchId], references: [id])
-  userId         String
-  user           User          @relation(fields: [userId], references: [id])
-  customerName   String        @default("Consumidor Final")
-  customerDoc    String?
-  customerEmail  String?
-  paymentMethod  PaymentMethod @default(CASH)
-  subtotal       Float
-  tax            Float         @default(0.0)
-  total          Float
-  status         SaleStatus    @default(COMPLETED)
-  notes          String?
-  createdAt      DateTime      @default(now())
+  id               String        @id @default(uuid())
+  saleNumber       String        @unique
+  documentType     DocumentType  @default(BOLETA)
+  series           String        @default("B001")
+  correlative      Int           @default(1)
+  branchId         String
+  branch           Branch        @relation(fields: [branchId], references: [id])
+  userId           String
+  user             User          @relation(fields: [userId], references: [id])
+  customerName     String        @default("Clientes Varios")
+  customerDoc      String?       // DNI (8 digitos) o RUC (11 digitos)
+  customerEmail    String?
+  customerAddress  String?
+  customerPhone    String?
+  paymentMethod    PaymentMethod @default(CASH)
+  operationCode    String?       // Código de confirmación de Yape/Plin o voucher
+  amountPaid       Float?        // Monto con el que paga el cliente
+  changeAmount     Float?        // Vuelto en soles entregado al cliente
+  currency         String        @default("PEN") // PEN (S/) o USD ($)
+  subtotal         Float
+  tax              Float         @default(0.0) // 18% IGV en Perú
+  total            Float
+  hash             String?       // Código Hash SHA-256 SUNAT
+  qrString         String?       // Contenido oficial del QR tributario SUNAT
+  sunatStatus      SunatStatus   @default(ACEPTADO)
+  status           SaleStatus    @default(COMPLETED)
+  notes            String?
+  createdAt        DateTime      @default(now())
 
-  items          SaleItem[]
+  cashRegisterId   String?
+  cashRegister     CashRegister? @relation(fields: [cashRegisterId], references: [id])
+
+  items            SaleItem[]
 }
 
 model SaleItem {
@@ -162,4 +214,54 @@ model TransferItem {
   productId  String
   product    Product       @relation(fields: [productId], references: [id])
   quantity   Int
+}
+
+model CashRegister {
+  id                  String       @id @default(uuid())
+  branchId            String
+  branch              Branch       @relation(fields: [branchId], references: [id])
+  userId              String
+  user                User         @relation(fields: [userId], references: [id])
+  initialAmount       Float        @default(0.0)
+  finalAmount         Float?       // Efectivo real contado en gaveta
+  cashSalesAmount     Float        @default(0.0)
+  yapeSalesAmount     Float        @default(0.0)
+  plinSalesAmount     Float        @default(0.0)
+  cardSalesAmount     Float        @default(0.0)
+  transferSalesAmount Float        @default(0.0)
+  totalIncomes        Float        @default(0.0)
+  totalExpenses       Float        @default(0.0)
+  expectedAmount      Float?       // Efectivo esperado = inicial + ventasEfectivo + ingresos - egresos
+  differenceAmount    Float?       // Sobrante (+), Faltante (-) o Conforme (0)
+  status              ShiftStatus  @default(OPEN)
+  notes               String?
+  openedAt            DateTime     @default(now())
+  closedAt            DateTime?
+
+  sales               Sale[]
+  movements           CashMovement[]
+}
+
+model CashMovement {
+  id             String       @id @default(uuid())
+  cashRegisterId String
+  cashRegister   CashRegister @relation(fields: [cashRegisterId], references: [id], onDelete: Cascade)
+  type           MovementType
+  amount         Float
+  concept        String
+  createdAt      DateTime     @default(now())
+}
+
+model KardexMovement {
+  id            String     @id @default(uuid())
+  branchId      String
+  branch        Branch     @relation(fields: [branchId], references: [id])
+  productId     String
+  product       Product    @relation(fields: [productId], references: [id])
+  type          KardexType
+  quantity      Int
+  previousStock Int
+  newStock      Int
+  reference     String?
+  createdAt     DateTime   @default(now())
 }
